@@ -1,28 +1,25 @@
 #include "message.h"
 
+#include <cstring>
 
-Message::Message(const char _type, const std::string &_body):
-    m_type(_type), m_body(_body)
+Message::Message(const char *_data, const int _length):
+    m_isParsed(false)
 {
+    m_rawDataLength = _length;
 
+    m_rawData = malloc(m_rawDataLength);
+    std::memcpy((void*)m_rawData, _data, m_rawDataLength);
 }
 
-std::string Message::body() const
+void Message::parse()
 {
-    return m_body;
-}
+    m_isParsed = true;
+    if (isClose()) {
+        return;
+    }
 
-bool Message::isClose() const
-{
-    return m_type == 0x1;
-}
+    m_nickRawDataLength = (int)data[4];
 
-bool Message::isLogin() const
-{
-    return m_type == 0x2;
-}
-
-bool Message::isMessage() const
-{
-    return m_type == 0x4;
+    m_nick = std::string((const char*)(m_rawData+5));
+    m_body = std::string((const char*)(m_rawData + 5 + m_nickRawDataLength));
 }
