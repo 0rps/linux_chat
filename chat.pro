@@ -5,7 +5,9 @@ CONFIG -= qt
 
 SOURCES += main.cpp \
     client.cpp \
-    server.cpp
+    server.cpp \
+    message.cpp \
+    messageparser.cpp
 
 QMAKE_CXXFLAGS += -std=c++11
 
@@ -15,5 +17,7 @@ qtcAddDeployment()
 HEADERS += \
     client.h \
     server.h \
-    utils.h
+    utils.h \
+    message.h \
+    messageparser.h
 
