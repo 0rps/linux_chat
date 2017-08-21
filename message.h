@@ -10,6 +10,7 @@ class Message
 {
 public:
     Message(const char *_data, const int _length);
+    ~Message();
 
     std::string body() const { if (false == m_isParsed) parse(); return m_body; }
     std::string nickname() const { if (false == m_isParsed) parse(); return m_nick; }
