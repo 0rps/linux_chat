@@ -64,7 +64,7 @@ void Client::run()
     FD_SET(0, &fdset);
     FD_SET(m_socketFd, &fdset);
 
-    char buf[4];
+    char buf[10];
     while(true) {
 
         select(m_socketFd+1, &fdset, NULL, NULL, NULL);

@@ -4,7 +4,7 @@
 
 const int constMessageHeaderLength = 4;
 
-MessageParser::MessageParser(): m_bufferCurrentLength(0), m_bufferCapacity(50)
+MessageParser::MessageParser(): m_bufferCurrentLength(0), m_bufferCapacity(5)
 {
     m_buffer = (char*)malloc(sizeof(char) * m_bufferCapacity);
 
@@ -45,6 +45,7 @@ void MessageParser::addData(const char *_data, const int _length)
 
     std::memcpy((void*)m_buffer, _data, _length);
     m_bufferCurrentLength += _length;
+    m_bufferEmptySpace -= _length;
 
     parseBuffer();
 }

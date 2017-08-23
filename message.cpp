@@ -1,5 +1,7 @@
 #include "message.h"
 
+#include <iostream>
+
 #include <cstring>
 
 Message::Message(const char *_data, const int _length):
@@ -9,6 +11,7 @@ Message::Message(const char *_data, const int _length):
 
     m_rawData = (char *)malloc(m_rawDataLength);
     std::memcpy((void*)m_rawData, _data, m_rawDataLength);
+    ptr = std::shared_ptr<int>(new int);
 }
 
 Message::Message(const int type, const std::string &_nickname, const std::string &_body):
@@ -25,11 +28,16 @@ Message::Message(const int type, const std::string &_nickname, const std::string
     std::memcpy((void*)m_rawData+4, (const void*) _nickname.c_str(), _nickname.length()+1);
     std::memcpy((void*)m_rawData+5 +_nickname.length(), (const void*)_body.c_str(), _body.length()+1);
 
+    ptr = std::shared_ptr<int>(new int);
+
 }
 
 Message::~Message()
 {
-    free(m_rawData);
+    if (ptr.unique()) {
+        std::cout << "message '" << body()  <<"' deleted" << std::endl;
+        free(m_rawData);
+    }
 }
 
 void Message::parse() const
