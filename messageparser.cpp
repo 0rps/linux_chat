@@ -1,10 +1,12 @@
 #include "messageparser.h"
 
+#include <iostream>
+
 #include <cstring>
 
 const int constMessageHeaderLength = 4;
 
-MessageParser::MessageParser(): m_bufferCurrentLength(0), m_bufferCapacity(5)
+MessageParser::MessageParser(): m_bufferCurrentLength(0), m_bufferCapacity(52)
 {
     m_buffer = (char*)malloc(sizeof(char) * m_bufferCapacity);
 
@@ -21,11 +23,12 @@ void MessageParser::addData(const char *_data, const int _length)
 {
     if (m_bufferEmptySpace < _length) {
 
-        if (m_curBuffer != m_buffer) {
-            std::memmove(m_buffer, m_curBuffer, m_bufferCurrentLength);
+        char *msgStart = m_curBuffer-m_bufferCurrentLength;
+        if (msgStart != m_buffer) {
+            std::memmove(m_buffer, msgStart, m_bufferCurrentLength);
 
             m_bufferEmptySpace = m_bufferCapacity - m_bufferCurrentLength;
-            m_curBuffer = m_buffer;
+            m_curBuffer = m_buffer + m_bufferCurrentLength;
         }
 
         if (m_bufferEmptySpace < _length) {
@@ -43,9 +46,10 @@ void MessageParser::addData(const char *_data, const int _length)
         }
     }
 
-    std::memcpy((void*)m_buffer, _data, _length);
+    std::memcpy((void*)m_curBuffer, _data, _length);
     m_bufferCurrentLength += _length;
     m_bufferEmptySpace -= _length;
+    m_curBuffer += _length;
 
     parseBuffer();
 }
@@ -69,9 +73,13 @@ void MessageParser::parseBuffer()
 
     if (m_bufferCurrentLength >= constMessageHeaderLength) {
         char *msgStart = m_curBuffer - m_bufferCurrentLength;
-        int msgLength = (((int)msgStart [0]) << 8) + (int)msgStart [1];
+        //std::cout << (int)msgStart[0] << "     " << (int)msgStart[1];
+        int a = (int)msgStart [0] & 0xFF;
+        int b= (int)msgStart [1] & 0xFF;
+        int c = (a << 8) + b;
+        int msgLength = (((int)msgStart [0]) << 8) | (int)msgStart [1];
 
-        if (msgLength >= m_bufferCurrentLength) {
+        if (msgLength <= m_bufferCurrentLength) {
             m_messageQueue.push_back(Message(msgStart , msgLength));
             m_bufferCurrentLength -= msgLength;
             if (m_bufferCurrentLength == 0) {

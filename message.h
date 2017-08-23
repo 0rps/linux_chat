@@ -35,7 +35,7 @@ private:
     mutable std::string m_nick;
     mutable int m_nickRawDataLength;
 
-    std::shared_ptr<int> ptr;
+    std::shared_ptr<char> ptr;
 
     char *m_rawData;
     int m_rawDataLength;

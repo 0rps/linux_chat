@@ -64,7 +64,7 @@ void Client::run()
     FD_SET(0, &fdset);
     FD_SET(m_socketFd, &fdset);
 
-    char buf[10];
+    char buf[15];
     while(true) {
 
         select(m_socketFd+1, &fdset, NULL, NULL, NULL);
@@ -73,7 +73,8 @@ void Client::run()
             std::string input;
             std::getline(std::cin, input);
 
-            Message msg(0x04, nickname, input);
+            Message msg(0x01, nickname, input);
+
             write(m_socketFd, (void*)msg.rawData(), msg.rawDataLength());
         }
 
@@ -84,6 +85,8 @@ void Client::run()
                 std::cout << "Remote server closed connection " << std::endl;
                 close(m_socketFd);
                 return;
+            } else {
+                //std::cout << "Portion of data: " << count << std::endl;
             }
             handleMessage(buf, count);
         }
@@ -100,8 +103,6 @@ void Client::handleMessage(const char *buffer, int msgLength)
     m_parser.addData(buffer, msgLength);
     while(m_parser.hasMessage()) {
         Message msg = m_parser.nextMessage();
-        if (msg.isMessage()) {
-            std::cout << msg.nickname() << ": " << msg.body() << std::endl;
-        }
+        std::cout << msg.nickname() << ": " << msg.body() << std::endl;
     }
 }

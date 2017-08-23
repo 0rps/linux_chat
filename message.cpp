@@ -10,32 +10,45 @@ Message::Message(const char *_data, const int _length):
     m_rawDataLength = _length;
 
     m_rawData = (char *)malloc(m_rawDataLength);
-    std::memcpy((void*)m_rawData, _data, m_rawDataLength);
-    ptr = std::shared_ptr<int>(new int);
+    std::memcpy((void*)m_rawData, _data, _length);
+
+    ptr = std::shared_ptr<char>(NULL);
 }
 
 Message::Message(const int type, const std::string &_nickname, const std::string &_body):
-    m_isParsed(true), m_body(_body), m_nick(_nickname)
+    m_isParsed(false), m_body(_body), m_nick(_nickname)
 {
-    m_rawDataLength = 4 + _nickname.length() + 1 + _body.length() + 1;
+
+    m_nickRawDataLength = std::strlen(_nickname.c_str())+1;
+    m_rawDataLength = 4 + std::strlen(_body.c_str()) +1 + std::strlen(_nickname.c_str()) +1;
+
+    const char * rawNick = _nickname.c_str();
+    const char *rawBody = _body.c_str();
 
     m_rawData = (char*)malloc(m_rawDataLength);
-    m_rawData[0] = m_rawDataLength >> 8 & 0xFF;
+
+    int a = (m_rawDataLength >> 8) & 0xFF;
+
+
+
+    int b = m_rawDataLength & 0xFF;
+    int c = std::strlen(_nickname.c_str());
+
+        std::cout << a << "  ----   " << b <<   "                   = " << m_rawDataLength  << std::endl;
+
+    m_rawData[0] = a;
     m_rawData[1] = m_rawDataLength & 0xFF;
-    /// TODO: type
-    m_rawData[2] = 0x04;
-    m_rawData[3] = _nickname.length() + 1;
-    std::memcpy((void*)m_rawData+4, (const void*) _nickname.c_str(), _nickname.length()+1);
-    std::memcpy((void*)m_rawData+5 +_nickname.length(), (const void*)_body.c_str(), _body.length()+1);
+    m_rawData[2] = (char)type;
+    m_rawData[3] = std::strlen(_nickname.c_str()) + 1;
+    std::memcpy((void*)m_rawData+4, (const void*) _nickname.c_str(), std::strlen(_nickname.c_str())+1);
+    std::memcpy((void*)m_rawData+4 + std::strlen(_nickname.c_str()) + 1, (const void*)_body.c_str(), std::strlen(_body.c_str()) + 1);
 
-    ptr = std::shared_ptr<int>(new int);
-
+    ptr = std::shared_ptr<char>(NULL);
 }
 
 Message::~Message()
 {
     if (ptr.unique()) {
-        std::cout << "message '" << body()  <<"' deleted" << std::endl;
         free(m_rawData);
     }
 }
