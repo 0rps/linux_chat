@@ -4,7 +4,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 
-bool setNonblock(int _socketFd) {
+inline bool setNonblock(int _socketFd) {
     int flags;
 
         /* If they have O_NONBLOCK, use the Posix way to do it */

@@ -7,7 +7,11 @@
 #include <netdb.h>
 #include <strings.h>
 
+#include <sys/select.h>
+
 #include <unistd.h>
+
+#include "utils.h"
 
 Client::Client(const in_addr _addr, const int _port)
 {
@@ -21,7 +25,7 @@ Client::Client(const in_addr _addr, const int _port)
 }
 
 void Client::run()
-{
+{   
     m_socketFd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (m_socketFd < 0) {
@@ -36,15 +40,62 @@ void Client::run()
 
     std::cout << "Connected to server" << std::endl << std::endl;
 
+    setNonblock(0);
+    setNonblock(m_socketFd);
 
-    char buf[256];
-    char message[] = "Start message";
+    fd_set fdset;
 
-    send(m_socketFd, message, 14, 0);
-    recv(m_socketFd, buf, 256, 0);
+    FD_ZERO(&fdset);
+    FD_SET(0, &fdset);
+    FD_SET(m_socketFd, &fdset);
 
-    std::cout << "Received: " << buf << std::endl;
+    char buf[1024];
+    char text[1024];
+    int textlength = 0;
 
-    shutdown(m_socketFd, SHUT_RDWR);
-    close(m_socketFd);
+    while(true) {
+
+        select(m_socketFd, &fdset, NULL, NULL, NULL);
+
+        if (FD_ISSET(0, &fdset)) {
+            int count = read(0, &buf, 1024);
+            bool isSend = false;
+            for (int i = 0; count; i++) {
+                if (buf[i] == '\n') {
+                    text[++textlength] = 0;
+                    isSend = true;
+                    break;
+                }
+                text[++textlength] = buf[i];
+            }
+
+            if (isSend) {
+                write(m_socketFd, text, textlength);
+            }
+        }
+
+        if (FD_ISSET(m_socketFd, &fdset)) {
+            int count = read(m_socketFd, &buf, 1024);
+            buf[count] = 0;
+            std::cout << buf << std::endl;
+        }
+
+        FD_ZERO(&fdset);
+        FD_SET(0, &fdset);
+        FD_SET(m_socketFd, &fdset);
+
+    }
+
+
+
+//    char buf[256];
+//    char message[] = "Start message";
+
+//    send(m_socketFd, message, 14, 0);
+//    recv(m_socketFd, buf, 256, 0);
+
+//    std::cout << "Received: " << buf << std::endl;
+
+//    shutdown(m_socketFd, SHUT_RDWR);
+//    close(m_socketFd);
 }

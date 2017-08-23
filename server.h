@@ -1,8 +1,6 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include <netinet/in.h>
-
 #include <set>
 #include <map>
 
@@ -17,13 +15,17 @@ public:
     void run();
 
 private:
-     struct sockaddr_in m_serverAddress;
+    bool runCycle();
+    bool acceptConnections();
+    bool handleClient(int _clientFd);
 
-     int m_listenFd;
-     int m_epollFd;
+private:
+    int m_portNumber;
 
-     std::map<int, MessageParser*> m_clientStreams;
-     std::map<int, std::string> m_clients;
+    int m_listenFd;
+    int m_epollFd;
+
+    std::map<int, MessageParser*> m_clientStreams;
 };
 
 #endif // SERVER_H
