@@ -70,7 +70,7 @@ void Server::run()
         close(m_listenFd);
         return;
     }
-    event.data.fd = m_epollFd;
+    event.data.fd = m_listenFd;
     event.events = EPOLLIN || EPOLLET;
 
     if (epoll_ctl(m_epollFd, EPOLL_CTL_ADD, m_listenFd, &event)) {
@@ -130,9 +130,9 @@ bool Server::runCycle()
             }
             bool isError = false;
             if (m_listenFd == currentFd) {
-                isError = acceptConnections();
+                isError = !acceptConnections();
             } else {
-                isError = handleClient(currentFd);
+                isError = !handleClient(currentFd);
             }
 
             if (isError) {
@@ -190,7 +190,7 @@ bool Server::handleClient(int _clientFd)
 
     bool isClose = false;
 
-    int count = read(_clientFd, buf, sizeof buf);
+    int count = read(_clientFd, buf, bufsize);
     if (count == -1) {
         // read all
         if (errno != EAGAIN) {
@@ -203,6 +203,7 @@ bool Server::handleClient(int _clientFd)
 
     } else {
         auto it = m_clientStreams.begin();
+        std::cout << "From client: " << buf << std::endl;
         std::cout << "read " << count << " bytes from " << _clientFd << std::endl;
 
         while(it != m_clientStreams.end()) {

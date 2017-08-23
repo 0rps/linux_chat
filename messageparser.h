@@ -21,13 +21,15 @@ private:
     void parseBuffer();
 
 private:
-    char *m_buffer;
+    int m_bufferCurrentLength;
     int m_bufferCapacity;
+    char *m_buffer;
+
 
     char *m_curBuffer;
     int m_bufferEmptySpace;
 
-    int m_bufferCurrentLength;
+
 
     std::list<Message> m_messageQueue;
 

@@ -7,6 +7,8 @@
 #include <netdb.h>
 #include <strings.h>
 
+#include <stdio.h>
+
 #include <sys/select.h>
 
 #include <unistd.h>
@@ -38,10 +40,23 @@ void Client::run()
         return;
     }
 
+
     std::cout << "Connected to server" << std::endl << std::endl;
 
-    setNonblock(0);
-    setNonblock(m_socketFd);
+    std::string nickname;
+
+    while(nickname.length() == 0) {
+        std::cout << "Input your nickname: ";
+        std::cin >> nickname;
+        std::cout << std::endl;
+    }
+
+    if (false == setNonblock(0) || false == setNonblock(m_socketFd)) {
+        std::cerr << "Couldnot set noblocking descriptors" << std::endl;
+        shutdown(m_socketFd, SHUT_RDWR);
+        close(m_socketFd);
+        return;
+    }
 
     fd_set fdset;
 
@@ -49,35 +64,28 @@ void Client::run()
     FD_SET(0, &fdset);
     FD_SET(m_socketFd, &fdset);
 
-    char buf[1024];
-    char text[1024];
-    int textlength = 0;
-
+    char buf[4];
     while(true) {
 
-        select(m_socketFd, &fdset, NULL, NULL, NULL);
+        select(m_socketFd+1, &fdset, NULL, NULL, NULL);
 
         if (FD_ISSET(0, &fdset)) {
-            int count = read(0, &buf, 1024);
-            bool isSend = false;
-            for (int i = 0; count; i++) {
-                if (buf[i] == '\n') {
-                    text[++textlength] = 0;
-                    isSend = true;
-                    break;
-                }
-                text[++textlength] = buf[i];
-            }
+            std::string input;
+            std::getline(std::cin, input);
 
-            if (isSend) {
-                write(m_socketFd, text, textlength);
-            }
+            Message msg(0x04, nickname, input);
+            write(m_socketFd, (void*)msg.rawData(), msg.rawDataLength());
         }
 
         if (FD_ISSET(m_socketFd, &fdset)) {
-            int count = read(m_socketFd, &buf, 1024);
-            buf[count] = 0;
-            std::cout << buf << std::endl;
+            int count = read(m_socketFd, &buf, sizeof buf);
+
+            if (count == 0) {
+                std::cout << "Remote server closed connection " << std::endl;
+                close(m_socketFd);
+                return;
+            }
+            handleMessage(buf, count);
         }
 
         FD_ZERO(&fdset);
@@ -85,17 +93,15 @@ void Client::run()
         FD_SET(m_socketFd, &fdset);
 
     }
+}
 
-
-
-//    char buf[256];
-//    char message[] = "Start message";
-
-//    send(m_socketFd, message, 14, 0);
-//    recv(m_socketFd, buf, 256, 0);
-
-//    std::cout << "Received: " << buf << std::endl;
-
-//    shutdown(m_socketFd, SHUT_RDWR);
-//    close(m_socketFd);
+void Client::handleMessage(const char *buffer, int msgLength)
+{
+    m_parser.addData(buffer, msgLength);
+    while(m_parser.hasMessage()) {
+        Message msg = m_parser.nextMessage();
+        if (msg.isMessage()) {
+            std::cout << msg.nickname() << ": " << msg.body() << std::endl;
+        }
+    }
 }

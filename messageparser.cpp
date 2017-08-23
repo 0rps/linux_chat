@@ -68,7 +68,7 @@ void MessageParser::parseBuffer()
 
     if (m_bufferCurrentLength >= constMessageHeaderLength) {
         char *msgStart = m_curBuffer - m_bufferCurrentLength;
-        int msgLength = ((int)msgStart [0]) << 8 + (int)msgStart [1];
+        int msgLength = (((int)msgStart [0]) << 8) + (int)msgStart [1];
 
         if (msgLength >= m_bufferCurrentLength) {
             m_messageQueue.push_back(Message(msgStart , msgLength));
