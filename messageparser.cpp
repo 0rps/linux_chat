@@ -1,7 +1,6 @@
 #include "messageparser.h"
 
 #include <iostream>
-
 #include <cstring>
 
 const int constMessageHeaderLength = 4;
@@ -73,12 +72,7 @@ void MessageParser::parseBuffer()
 
     if (m_bufferCurrentLength >= constMessageHeaderLength) {
         char *msgStart = m_curBuffer - m_bufferCurrentLength;
-        //std::cout << (int)msgStart[0] << "     " << (int)msgStart[1];
-        int a = (int)msgStart [0] & 0xFF;
-        int b= (int)msgStart [1] & 0xFF;
-        int c = (a << 8) + b;
         int msgLength = (((int)msgStart [0]) << 8) | (int)msgStart [1];
-
         if (msgLength <= m_bufferCurrentLength) {
             m_messageQueue.push_back(Message(msgStart , msgLength));
             m_bufferCurrentLength -= msgLength;

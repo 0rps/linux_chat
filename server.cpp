@@ -177,7 +177,7 @@ bool Server::acceptConnections()
             return false;
         }
 
-        m_clientStreams.insert(std::pair<int, MessageParser*>(clientFd, NULL));
+        m_clientStreams.insert(std::pair<int, MessageParser*>(clientFd, new MessageParser()));
 
         std::cout << "Add new connection: " << clientFd  << std::endl;
     }
@@ -192,32 +192,77 @@ bool Server::handleClient(int _clientFd)
 
     int count = read(_clientFd, buf, bufsize);
     if (count == -1) {
-        // read all
         if (errno != EAGAIN) {
             std::cout << "Read all" << std::endl;
             isClose = true;
         }
     } else if (count == 0) {
-        // close connection
         isClose = true;
 
     } else {
-        auto it = m_clientStreams.begin();
-        std::cout << "From client: " << buf << std::endl;
-        std::cout << "read " << count << " bytes from " << _clientFd << std::endl;
 
-        while(it != m_clientStreams.end()) {
-            if (it->first != _clientFd) {
-                write(it->first, buf, count);
+        std::cout << "Read " << count << " bytes from " << _clientFd << std::endl;
+
+        MessageParser* clientParser = m_clientStreams.at(_clientFd);
+        clientParser->addData(buf, count);
+        while(clientParser->hasMessage()) {
+            Message msg = clientParser->nextMessage();
+
+//            std::cout << "message from " << _clientFd << "" << std::endl;
+
+
+//            if (msg.isService()) {
+//                std::cout << "message from " << _clientFd << " is service" << std::endl;
+//                if (msg.isLogin()) {
+//                    std::cout << "message from " << _clientFd << " is login" << std::endl;
+//                }
+//            }
+
+//            std::cout << (int)msg.rawData()[2] << std::endl;
+//            std::cout << msg.isMessage() << "  " << msg.isService()  << std::endl;
+
+
+//            if (msg.isMessage()) {
+//                std::cout << "message from " << _clientFd << " is message, nick = " << msg.nickname() << std::endl;
+//            }
+
+            bool hasLogin = m_clientNicks.count(_clientFd) > 0;
+            if (msg.isService() && msg.isLogin())  {
+                m_clientNicks[_clientFd] = msg.nickname();
+            } else if (msg.isMessage() && !hasLogin) {
+                std::cout << "Skip message from " << _clientFd << std::endl;
+                continue;
             }
-            it++;
+            auto it = m_clientStreams.begin();
+            while(it != m_clientStreams.end()) {
+                if (it->first != _clientFd) {
+                    write(it->first, msg.rawData(), msg.rawDataLength());
+                }
+                it++;
+            }
+
         }
     }
 
     if (isClose) {
         std::cout << "Close connection: " << _clientFd  << std::endl;
+
+        if (m_clientNicks.count(_clientFd) > 0) {
+            Message msg = createCloseMessage(m_clientNicks.at(_clientFd));
+//            msg.parse();
+//            std::cout << msg.nickname() << std::endl;
+            auto it = m_clientStreams.begin();
+            while(it != m_clientStreams.end()) {
+                if (it->first != _clientFd) {
+                    write(it->first, msg.rawData(), msg.rawDataLength());
+                }
+                it++;
+            }
+        }
+
         close(_clientFd);
         m_clientStreams.erase(_clientFd);
+        m_clientNicks.erase(_clientFd);
     }
 
     return true;

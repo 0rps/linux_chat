@@ -64,6 +64,9 @@ void Client::run()
     FD_SET(0, &fdset);
     FD_SET(m_socketFd, &fdset);
 
+    Message loginMessage = createLoginMessage(nickname);
+    write(m_socketFd, (void*)loginMessage.rawData(), loginMessage.rawDataLength());
+
     char buf[15];
     while(true) {
 
@@ -73,7 +76,7 @@ void Client::run()
             std::string input;
             std::getline(std::cin, input);
 
-            Message msg(0x01, nickname, input);
+            Message msg(nickname, input);
 
             write(m_socketFd, (void*)msg.rawData(), msg.rawDataLength());
         }
@@ -103,6 +106,15 @@ void Client::handleMessage(const char *buffer, int msgLength)
     m_parser.addData(buffer, msgLength);
     while(m_parser.hasMessage()) {
         Message msg = m_parser.nextMessage();
-        std::cout << msg.nickname() << ": " << msg.body() << std::endl;
+
+        if (msg.isMessage()) {
+            std::cout << msg.nickname() << ": " << msg.body() << std::endl;
+        } else {
+            if (msg.isClose()) {
+                std::cout << "Client " << msg.nickname() << msg.body() <<  " has left chat" << std::endl;
+            } else if (msg.isLogin()) {
+                std::cout << "Client '" << msg.nickname() <<  "' has joined to chat!" << std::endl;
+            }
+        }
     }
 }

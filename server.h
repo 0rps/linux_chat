@@ -26,6 +26,7 @@ private:
     int m_epollFd;
 
     std::map<int, MessageParser*> m_clientStreams;
+    std::map<int, std::string> m_clientNicks;
 };
 
 #endif // SERVER_H
